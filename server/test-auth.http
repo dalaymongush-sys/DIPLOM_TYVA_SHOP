@@ -1,0 +1,18 @@
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "user1@mail.ru",
+  "password": "12345",
+  "fullName": "Тестовый Пользователь"
+}
+
+###
+
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "user1@mail.ru",
+  "password": "12345"
+}
