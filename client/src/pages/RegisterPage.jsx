@@ -1,62 +1,65 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const API = import.meta.env.VITE_API_URL;
+
 function RegisterPage() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    fullName: "",
-    email: "",
-    password: "",
-  });
-
-  const [message, setMessage] = useState("");
+  const [form, setForm] = useState({ fullName: "", email: "", password: "" });
+  const [agreed, setAgreed] = useState(false);
+  const [message, setMessage] = useState({ text: "", type: "" });
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("");
+    setMessage({ text: "", type: "" });
 
     if (!form.fullName || !form.email || !form.password) {
-      setMessage("Заполните все поля.");
+      setMessage({ text: "Заполните все поля.", type: "error" });
       return;
     }
 
+    if (form.password.length < 6) {
+      setMessage({ text: "Пароль должен содержать минимум 6 символов.", type: "error" });
+      return;
+    }
+
+    if (!agreed) {
+      setMessage({
+        text: "Необходимо согласие на обработку персональных данных.",
+        type: "error",
+      });
+      return;
+    }
+
+    setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(`${API}/api/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          fullName: form.fullName,
-          email: form.email,
-          password: form.password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName: form.fullName, email: form.email, password: form.password }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setMessage(data.message || "Не удалось зарегистрироваться.");
+        setMessage({ text: data.message || "Не удалось зарегистрироваться.", type: "error" });
         return;
       }
 
-      setMessage("Регистрация прошла успешно.");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 700);
+      setMessage({ text: "Регистрация прошла успешно.", type: "success" });
+      setTimeout(() => navigate("/login"), 700);
     } catch (error) {
       console.error("Ошибка регистрации:", error);
-      setMessage("Ошибка сервера при регистрации.");
+      setMessage({ text: "Ошибка сервера при регистрации.", type: "error" });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,17 +85,33 @@ function RegisterPage() {
         <input
           type="password"
           name="password"
-          placeholder="Пароль"
+          placeholder="Пароль (минимум 6 символов)"
           value={form.password}
           onChange={handleChange}
         />
 
-        <button type="submit" className="buy-button">
-          Зарегистрироваться
+        <div className="form-group" style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <input
+            type="checkbox"
+            id="privacy"
+            checked={agreed}
+            onChange={(e) => setAgreed(e.target.checked)}
+            style={{ width: 18, height: 18, cursor: "pointer" }}
+          />
+          <label htmlFor="privacy" style={{ fontSize: 13, color: "#666" }}>
+            Я согласен(а) с{" "}
+            <a href="/privacy" target="_blank" style={{ color: "#222" }}>
+              политикой обработки персональных данных
+            </a>
+          </label>
+        </div>
+
+        <button type="submit" className="buy-button" disabled={loading}>
+          {loading ? "Загрузка..." : "Зарегистрироваться"}
         </button>
       </form>
 
-      {message && <p className="order-message">{message}</p>}
+      {message.text && <p className="order-message">{message.text}</p>}
     </section>
   );
 }

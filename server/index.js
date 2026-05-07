@@ -1,5 +1,8 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const categoryRoutes = require("./routes/categoryRoutes");
@@ -10,8 +13,20 @@ const orderRoutes = require("./routes/orderRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(helmet());
+app.use(cors({
+  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  credentials: true,
+}));
+app.use(morgan("dev"));
 app.use(express.json());
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { message: "Слишком много попыток. Попробуйте через 15 минут." },
+});
+app.use("/api/auth", authLimiter);
 
 app.get("/", (req, res) => {
   res.send("Сервер интернет-магазина работает");
@@ -21,6 +36,15 @@ app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/orders", orderRoutes);
+
+app.use("/api", (req, res) => {
+  res.status(404).json({ message: `Маршрут ${req.method} ${req.path} не найден` });
+});
+
+app.use((err, req, res, next) => {
+  console.error("Необработанная ошибка:", err);
+  res.status(500).json({ message: "Внутренняя ошибка сервера" });
+});
 
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);

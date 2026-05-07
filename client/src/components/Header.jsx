@@ -1,13 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "../context/CartContext";
 
 function Header() {
   const navigate = useNavigate();
+  const { cartCount } = useCart();
 
   let currentUser = null;
-
   try {
     currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-  } catch (error) {
+  } catch {
     localStorage.removeItem("currentUser");
     currentUser = null;
   }
@@ -29,7 +30,21 @@ function Header() {
         <nav className="nav">
           <Link to="/">Главная</Link>
           <Link to="/catalog">Каталог</Link>
-          <Link to="/cart">Корзина</Link>
+          <Link to="/cart">
+            Корзина{cartCount > 0 && (
+              <span style={{
+                marginLeft: 4,
+                background: "#c0392b",
+                color: "white",
+                borderRadius: "50%",
+                padding: "2px 7px",
+                fontSize: 11,
+                fontWeight: 700,
+              }}>
+                {cartCount}
+              </span>
+            )}
+          </Link>
           <Link to="/account">Личный кабинет</Link>
 
           {currentUser?.role === "ADMIN" && <Link to="/admin">Админка</Link>}

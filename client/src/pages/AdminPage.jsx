@@ -1,20 +1,12 @@
 import { useEffect, useState } from "react";
+import { authFetch } from "../utils/api";
+import ConfirmDialog from "../components/ConfirmDialog";
+
+const API = import.meta.env.VITE_API_URL;
 
 function AdminPage() {
-  const token = localStorage.getItem("token");
-
-  const emptyProductForm = {
-    name: "",
-    description: "",
-    price: "",
-    imageUrl: "",
-    stock: "",
-    categoryId: "",
-  };
-
-  const emptyCategoryForm = {
-    name: "",
-  };
+  const emptyProductForm = { name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "" };
+  const emptyCategoryForm = { name: "" };
 
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -30,46 +22,33 @@ function AdminPage() {
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [categoryForm, setCategoryForm] = useState(emptyCategoryForm);
 
+  const [confirm, setConfirm] = useState(null); // { message, onConfirm }
+
   const loadCategories = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/categories");
-      const data = await response.json();
-      setCategories(data);
-    } catch (error) {
-      console.error("Ошибка загрузки категорий:", error);
+      const res = await fetch(`${API}/api/categories`);
+      setCategories(await res.json());
+    } catch (e) {
+      console.error("Ошибка загрузки категорий:", e);
     }
   };
 
   const loadProducts = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/products");
-      const data = await response.json();
-      setProducts(data);
-    } catch (error) {
-      console.error("Ошибка загрузки товаров:", error);
+      const res = await fetch(`${API}/api/products?limit=1000`);
+      const data = await res.json();
+      setProducts(data.products || data);
+    } catch (e) {
+      console.error("Ошибка загрузки товаров:", e);
     }
   };
 
   const loadOrders = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/api/orders", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setOrderMessage(data.message || "Не удалось загрузить заказы.");
-        return;
-      }
-
-      setOrders(data);
-    } catch (error) {
-      console.error("Ошибка загрузки заказов:", error);
-      setOrderMessage("Ошибка сервера при загрузке заказов.");
-    }
+    const res = await authFetch(`${API}/api/orders`);
+    if (!res) return;
+    const data = await res.json();
+    if (res.ok) setOrders(data);
+    else setOrderMessage(data.message || "Не удалось загрузить заказы.");
   };
 
   useEffect(() => {
@@ -80,41 +59,21 @@ function AdminPage() {
 
   const handleProductChange = (e) => {
     const { name, value } = e.target;
-    setProductForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setProductForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleCategoryChange = (e) => {
     const { name, value } = e.target;
-    setCategoryForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setCategoryForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const resetProductForm = () => {
-    setProductForm(emptyProductForm);
-    setEditingProductId(null);
-  };
-
-  const resetCategoryForm = () => {
-    setCategoryForm(emptyCategoryForm);
-    setEditingCategoryId(null);
-  };
+  const resetProductForm = () => { setProductForm(emptyProductForm); setEditingProductId(null); };
+  const resetCategoryForm = () => { setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); };
 
   const handleProductSubmit = async (e) => {
     e.preventDefault();
     setProductMessage("");
-
-    if (
-      !productForm.name ||
-      !productForm.description ||
-      !productForm.price ||
-      !productForm.stock ||
-      !productForm.categoryId
-    ) {
+    if (!productForm.name || !productForm.description || !productForm.price || !productForm.categoryId) {
       setProductMessage("Заполните все обязательные поля товара.");
       return;
     }
@@ -124,107 +83,39 @@ function AdminPage() {
       description: productForm.description,
       price: Number(productForm.price),
       imageUrl: productForm.imageUrl,
-      stock: Number(productForm.stock),
+      stock: Number(productForm.stock) || 0,
       categoryId: Number(productForm.categoryId),
     };
 
-    try {
-      let response;
+    const url = editingProductId ? `${API}/api/products/${editingProductId}` : `${API}/api/products`;
+    const method = editingProductId ? "PUT" : "POST";
 
-      if (editingProductId) {
-        response = await fetch(
-          `http://localhost:5000/api/products/${editingProductId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(payload),
-          }
-        );
-      } else {
-        response = await fetch("http://localhost:5000/api/products", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-      }
+    const res = await authFetch(url, { method, body: JSON.stringify(payload) });
+    if (!res) return;
+    const data = await res.json();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setProductMessage(data.message || "Операция с товаром не выполнена.");
-        return;
-      }
-
-      setProductMessage(
-        editingProductId ? "Товар успешно обновлён." : "Товар успешно добавлен."
-      );
-      resetProductForm();
-      loadProducts();
-    } catch (error) {
-      console.error("Ошибка при сохранении товара:", error);
-      setProductMessage("Ошибка сервера при сохранении товара.");
-    }
+    if (!res.ok) { setProductMessage(data.message || "Операция не выполнена."); return; }
+    setProductMessage(editingProductId ? "Товар успешно обновлён." : "Товар успешно добавлен.");
+    resetProductForm();
+    loadProducts();
   };
 
   const handleCategorySubmit = async (e) => {
     e.preventDefault();
     setCategoryMessage("");
+    if (!categoryForm.name) { setCategoryMessage("Введите название категории."); return; }
 
-    if (!categoryForm.name) {
-      setCategoryMessage("Введите название категории.");
-      return;
-    }
+    const url = editingCategoryId ? `${API}/api/categories/${editingCategoryId}` : `${API}/api/categories`;
+    const method = editingCategoryId ? "PUT" : "POST";
 
-    try {
-      let response;
+    const res = await authFetch(url, { method, body: JSON.stringify({ name: categoryForm.name }) });
+    if (!res) return;
+    const data = await res.json();
 
-      if (editingCategoryId) {
-        response = await fetch(
-          `http://localhost:5000/api/categories/${editingCategoryId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ name: categoryForm.name }),
-          }
-        );
-      } else {
-        response = await fetch("http://localhost:5000/api/categories", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ name: categoryForm.name }),
-        });
-      }
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setCategoryMessage(data.message || "Операция с категорией не выполнена.");
-        return;
-      }
-
-      setCategoryMessage(
-        editingCategoryId
-          ? "Категория успешно обновлена."
-          : "Категория успешно добавлена."
-      );
-      resetCategoryForm();
-      loadCategories();
-    } catch (error) {
-      console.error("Ошибка при сохранении категории:", error);
-      setCategoryMessage("Ошибка сервера при сохранении категории.");
-    }
+    if (!res.ok) { setCategoryMessage(data.message || "Операция не выполнена."); return; }
+    setCategoryMessage(editingCategoryId ? "Категория обновлена." : "Категория добавлена.");
+    resetCategoryForm();
+    loadCategories();
   };
 
   const handleEditProduct = (product) => {
@@ -240,155 +131,90 @@ function AdminPage() {
     setProductMessage("");
   };
 
-  const handleDeleteProduct = async (id) => {
-    const confirmed = window.confirm("Удалить товар?");
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(`http://localhost:5000/api/products/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setProductMessage(data.message || "Не удалось удалить товар.");
-        return;
-      }
-
-      setProductMessage("Товар удалён.");
-      if (editingProductId === id) {
-        resetProductForm();
-      }
-      loadProducts();
-    } catch (error) {
-      console.error("Ошибка при удалении товара:", error);
-      setProductMessage("Ошибка сервера при удалении товара.");
-    }
+  const handleDeleteProduct = (id) => {
+    setConfirm({
+      message: "Удалить этот товар? Действие необратимо.",
+      onConfirm: async () => {
+        setConfirm(null);
+        const res = await authFetch(`${API}/api/products/${id}`, { method: "DELETE" });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok) { setProductMessage(data.message || "Не удалось удалить товар."); return; }
+        setProductMessage("Товар удалён.");
+        if (editingProductId === id) resetProductForm();
+        loadProducts();
+      },
+    });
   };
 
   const handleEditCategory = (category) => {
     setEditingCategoryId(category.id);
-    setCategoryForm({
-      name: category.name || "",
-    });
+    setCategoryForm({ name: category.name || "" });
     setCategoryMessage("");
   };
 
-  const handleDeleteCategory = async (id) => {
-    const confirmed = window.confirm("Удалить категорию?");
-    if (!confirmed) return;
-
-    try {
-      const response = await fetch(`http://localhost:5000/api/categories/${id}`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setCategoryMessage(data.message || "Не удалось удалить категорию.");
-        return;
-      }
-
-      setCategoryMessage("Категория удалена.");
-      if (editingCategoryId === id) {
-        resetCategoryForm();
-      }
-      loadCategories();
-    } catch (error) {
-      console.error("Ошибка при удалении категории:", error);
-      setCategoryMessage("Ошибка сервера при удалении категории.");
-    }
+  const handleDeleteCategory = (id) => {
+    setConfirm({
+      message: "Удалить эту категорию? Действие необратимо.",
+      onConfirm: async () => {
+        setConfirm(null);
+        const res = await authFetch(`${API}/api/categories/${id}`, { method: "DELETE" });
+        if (!res) return;
+        const data = await res.json();
+        if (!res.ok) { setCategoryMessage(data.message || "Не удалось удалить категорию."); return; }
+        setCategoryMessage("Категория удалена.");
+        if (editingCategoryId === id) resetCategoryForm();
+        loadCategories();
+      },
+    });
   };
 
   const handleStatusChange = async (orderId, status) => {
     setOrderMessage("");
-
-    try {
-      const response = await fetch(
-        `http://localhost:5000/api/orders/${orderId}/status`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ status }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setOrderMessage(data.message || "Не удалось обновить статус заказа.");
-        return;
-      }
-
-      setOrderMessage("Статус заказа обновлён.");
-      loadOrders();
-    } catch (error) {
-      console.error("Ошибка при обновлении статуса заказа:", error);
-      setOrderMessage("Ошибка сервера при обновлении статуса.");
-    }
+    const res = await authFetch(`${API}/api/orders/${orderId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+    if (!res) return;
+    const data = await res.json();
+    if (!res.ok) { setOrderMessage(data.message || "Не удалось обновить статус."); return; }
+    setOrderMessage("Статус заказа обновлён.");
+    loadOrders();
   };
 
   return (
     <section className="content-box">
+      {confirm && (
+        <ConfirmDialog
+          message={confirm.message}
+          onConfirm={confirm.onConfirm}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
       <h1>Админ-панель</h1>
 
       <div className="admin-section">
         <h2>Управление категориями</h2>
-
         <form className="order-form" onSubmit={handleCategorySubmit}>
-          <input
-            type="text"
-            name="name"
-            placeholder="Название категории"
-            value={categoryForm.name}
-            onChange={handleCategoryChange}
-          />
-
+          <input type="text" name="name" placeholder="Название категории" value={categoryForm.name} onChange={handleCategoryChange} />
           <div className="admin-form-actions">
             <button type="submit" className="buy-button">
               {editingCategoryId ? "Сохранить категорию" : "Добавить категорию"}
             </button>
-
             {editingCategoryId && (
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={resetCategoryForm}
-              >
-                Отмена
-              </button>
+              <button type="button" className="secondary-button" onClick={resetCategoryForm}>Отмена</button>
             )}
           </div>
         </form>
-
         {categoryMessage && <p className="order-message">{categoryMessage}</p>}
-
         <div className="admin-product-list">
           {categories.map((category) => (
             <div key={category.id} className="admin-product-item">
-              <div>
-                <strong>{category.name}</strong>
-                <div>Товаров в категории: {category._count?.products || 0}</div>
-              </div>
-
+              <strong>{category.name}</strong>
               <div className="admin-product-actions">
-                <button onClick={() => handleEditCategory(category)}>
-                  Редактировать
-                </button>
-                <button onClick={() => handleDeleteCategory(category.id)}>
-                  Удалить
-                </button>
+                <button onClick={() => handleEditCategory(category)}>Редактировать</button>
+                <button onClick={() => handleDeleteCategory(category.id)}>Удалить</button>
               </div>
             </div>
           ))}
@@ -397,84 +223,29 @@ function AdminPage() {
 
       <div className="admin-section">
         <h2>{editingProductId ? "Редактирование товара" : "Добавление товара"}</h2>
-
         <form className="order-form" onSubmit={handleProductSubmit}>
-          <input
-            type="text"
-            name="name"
-            placeholder="Название товара"
-            value={productForm.name}
-            onChange={handleProductChange}
-          />
-
-          <textarea
-            name="description"
-            placeholder="Описание товара"
-            value={productForm.description}
-            onChange={handleProductChange}
-            className="admin-textarea"
-          />
-
-          <input
-            type="number"
-            name="price"
-            placeholder="Цена"
-            value={productForm.price}
-            onChange={handleProductChange}
-          />
-
-          <input
-            type="text"
-            name="imageUrl"
-            placeholder="Ссылка на изображение"
-            value={productForm.imageUrl}
-            onChange={handleProductChange}
-          />
-
-          <input
-            type="number"
-            name="stock"
-            placeholder="Количество на складе"
-            value={productForm.stock}
-            onChange={handleProductChange}
-          />
-
-          <select
-            name="categoryId"
-            value={productForm.categoryId}
-            onChange={handleProductChange}
-            className="admin-select"
-          >
+          <input type="text" name="name" placeholder="Название товара" value={productForm.name} onChange={handleProductChange} />
+          <textarea name="description" placeholder="Описание товара" value={productForm.description} onChange={handleProductChange} className="admin-textarea" />
+          <input type="number" name="price" placeholder="Цена" value={productForm.price} onChange={handleProductChange} />
+          <input type="text" name="imageUrl" placeholder="Ссылка на изображение" value={productForm.imageUrl} onChange={handleProductChange} />
+          <input type="number" name="stock" placeholder="Количество на складе" value={productForm.stock} onChange={handleProductChange} />
+          <select name="categoryId" value={productForm.categoryId} onChange={handleProductChange} className="admin-select">
             <option value="">Выберите категорию</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
+            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
-
           <div className="admin-form-actions">
             <button type="submit" className="buy-button">
               {editingProductId ? "Сохранить изменения" : "Добавить товар"}
             </button>
-
             {editingProductId && (
-              <button
-                type="button"
-                className="secondary-button"
-                onClick={resetProductForm}
-              >
-                Отмена
-              </button>
+              <button type="button" className="secondary-button" onClick={resetProductForm}>Отмена</button>
             )}
           </div>
         </form>
-
         {productMessage && <p className="order-message">{productMessage}</p>}
 
         <div className="admin-products">
           <h2>Список товаров</h2>
-
           {products.length === 0 ? (
             <p>Товаров пока нет.</p>
           ) : (
@@ -487,14 +258,9 @@ function AdminPage() {
                     <div>Цена: {product.price} ₽</div>
                     <div>Остаток: {product.stock}</div>
                   </div>
-
                   <div className="admin-product-actions">
-                    <button onClick={() => handleEditProduct(product)}>
-                      Редактировать
-                    </button>
-                    <button onClick={() => handleDeleteProduct(product.id)}>
-                      Удалить
-                    </button>
+                    <button onClick={() => handleEditProduct(product)}>Редактировать</button>
+                    <button onClick={() => handleDeleteProduct(product.id)}>Удалить</button>
                   </div>
                 </div>
               ))}
@@ -505,9 +271,7 @@ function AdminPage() {
 
       <div className="admin-section">
         <h2>Заказы</h2>
-
         {orderMessage && <p className="order-message">{orderMessage}</p>}
-
         {orders.length === 0 ? (
           <p>Заказов пока нет.</p>
         ) : (
@@ -520,9 +284,8 @@ function AdminPage() {
                   <div>Email: {order.user?.email}</div>
                   <div>Сумма: {order.totalPrice} ₽</div>
                   <div>Статус: {order.status}</div>
-                  <div>Дата: {new Date(order.createdAt).toLocaleString()}</div>
+                  <div>Дата: {new Date(order.createdAt).toLocaleString("ru-RU")}</div>
                 </div>
-
                 <div className="admin-order-items">
                   <strong>Состав заказа:</strong>
                   {order.items.map((item) => (
@@ -531,17 +294,10 @@ function AdminPage() {
                     </div>
                   ))}
                 </div>
-
                 <div className="admin-order-actions">
-                  <button onClick={() => handleStatusChange(order.id, "NEW")}>
-                    NEW
-                  </button>
-                  <button onClick={() => handleStatusChange(order.id, "PROCESSING")}>
-                    PROCESSING
-                  </button>
-                  <button onClick={() => handleStatusChange(order.id, "DONE")}>
-                    DONE
-                  </button>
+                  <button onClick={() => handleStatusChange(order.id, "NEW")}>NEW</button>
+                  <button onClick={() => handleStatusChange(order.id, "PROCESSING")}>PROCESSING</button>
+                  <button onClick={() => handleStatusChange(order.id, "DONE")}>DONE</button>
                 </div>
               </div>
             ))}

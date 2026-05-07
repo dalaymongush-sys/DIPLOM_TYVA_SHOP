@@ -13,6 +13,8 @@ model User {
   password  String
   fullName  String
   role      String   @default("USER")
+  phone     String?
+  address   String?
   createdAt DateTime @default(now())
 
   orders    Order[]

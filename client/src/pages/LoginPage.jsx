@@ -1,22 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+const API = import.meta.env.VITE_API_URL;
+
 function LoginPage() {
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [form, setForm] = useState({ email: "", password: "" });
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e) => {
@@ -28,16 +24,12 @@ function LoginPage() {
       return;
     }
 
+    setLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch(`${API}/api/auth/login`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: form.email,
-          password: form.password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: form.email, password: form.password }),
       });
 
       const data = await response.json();
@@ -49,7 +41,6 @@ function LoginPage() {
 
       localStorage.setItem("currentUser", JSON.stringify(data.user));
       localStorage.setItem("token", data.token);
-
       setMessage("Вход выполнен успешно.");
 
       setTimeout(() => {
@@ -59,6 +50,8 @@ function LoginPage() {
     } catch (error) {
       console.error("Ошибка входа:", error);
       setMessage("Ошибка сервера при входе.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -82,8 +75,8 @@ function LoginPage() {
           onChange={handleChange}
         />
 
-        <button type="submit" className="buy-button">
-          Войти
+        <button type="submit" className="buy-button" disabled={loading}>
+          {loading ? "Загрузка..." : "Войти"}
         </button>
       </form>
 

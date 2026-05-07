@@ -1,14 +1,61 @@
 const prisma = require("../config/db");
+const { z } = require("zod");
+
+const productSchema = z.object({
+  name: z.string().min(2, "Название минимум 2 символа").max(200),
+  description: z.string().min(5, "Описание минимум 5 символов").max(2000),
+  price: z.number().positive("Цена должна быть положительной"),
+  stock: z.number().int().min(0, "Остаток не может быть отрицательным"),
+  categoryId: z.number().int().positive(),
+  imageUrl: z.string().optional().nullable(),
+});
+
+const sortMap = {
+  price_asc: { price: "asc" },
+  price_desc: { price: "desc" },
+  name_asc: { name: "asc" },
+  id_asc: { id: "asc" },
+};
 
 const getAllProducts = async (req, res) => {
   try {
-    const products = await prisma.product.findMany({
-      include: {
-        category: true,
-      },
-      orderBy: { id: "asc" },
-    });
+    const { search, categoryId, page, limit = 12, sort } = req.query;
 
+    const where = {};
+    if (search) where.name = { contains: search, mode: "insensitive" };
+    if (categoryId) where.categoryId = Number(categoryId);
+
+    const orderBy = sortMap[sort] || { id: "asc" };
+
+    if (page !== undefined) {
+      const pageNum = Number(page) || 1;
+      const limitNum = Number(limit);
+      const skip = (pageNum - 1) * limitNum;
+
+      const [products, total] = await Promise.all([
+        prisma.product.findMany({
+          where,
+          include: { category: true },
+          orderBy,
+          skip,
+          take: limitNum,
+        }),
+        prisma.product.count({ where }),
+      ]);
+
+      return res.json({
+        products,
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+      });
+    }
+
+    const products = await prisma.product.findMany({
+      where,
+      include: { category: true },
+      orderBy,
+    });
     res.json(products);
   } catch (error) {
     console.error("Ошибка при получении товаров:", error);
@@ -16,30 +63,45 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+const getProductById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await prisma.product.findUnique({
+      where: { id: Number(id) },
+      include: { category: true },
+    });
+    if (!product) return res.status(404).json({ message: "Товар не найден" });
+    res.json(product);
+  } catch (error) {
+    console.error("Ошибка при получении товара:", error);
+    res.status(500).json({ message: "Не удалось получить товар" });
+  }
+};
+
 const createProduct = async (req, res) => {
   try {
-    const { name, description, price, imageUrl, stock, categoryId } = req.body;
-
-    if (!name || !description || price === undefined || !categoryId) {
-      return res.status(400).json({
-        message: "Поля name, description, price, categoryId обязательны",
-      });
+    const parsed = productSchema.safeParse({
+      ...req.body,
+      price: Number(req.body.price),
+      stock: Number(req.body.stock),
+      categoryId: Number(req.body.categoryId),
+    });
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0].message });
     }
 
+    const { name, description, price, imageUrl, stock, categoryId } = parsed.data;
     const product = await prisma.product.create({
       data: {
         name: name.trim(),
         description: description.trim(),
-        price: Number(price),
+        price,
         imageUrl: imageUrl ? imageUrl.trim() : null,
-        stock: stock !== undefined ? Number(stock) : 0,
-        categoryId: Number(categoryId),
+        stock,
+        categoryId,
       },
-      include: {
-        category: true,
-      },
+      include: { category: true },
     });
-
     res.status(201).json(product);
   } catch (error) {
     console.error("Ошибка при создании товара:", error);
@@ -50,31 +112,29 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, description, price, imageUrl, stock, categoryId } = req.body;
-
-    if (!name || !description || price === undefined || !categoryId) {
-      return res.status(400).json({
-        message: "Поля name, description, price, categoryId обязательны",
-      });
+    const parsed = productSchema.safeParse({
+      ...req.body,
+      price: Number(req.body.price),
+      stock: Number(req.body.stock),
+      categoryId: Number(req.body.categoryId),
+    });
+    if (!parsed.success) {
+      return res.status(400).json({ message: parsed.error.errors[0].message });
     }
 
+    const { name, description, price, imageUrl, stock, categoryId } = parsed.data;
     const product = await prisma.product.update({
-      where: {
-        id: Number(id),
-      },
+      where: { id: Number(id) },
       data: {
         name: name.trim(),
         description: description.trim(),
-        price: Number(price),
+        price,
         imageUrl: imageUrl ? imageUrl.trim() : null,
-        stock: stock !== undefined ? Number(stock) : 0,
-        categoryId: Number(categoryId),
+        stock,
+        categoryId,
       },
-      include: {
-        category: true,
-      },
+      include: { category: true },
     });
-
     res.json(product);
   } catch (error) {
     console.error("Ошибка при обновлении товара:", error);
@@ -85,13 +145,7 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-
-    await prisma.product.delete({
-      where: {
-        id: Number(id),
-      },
-    });
-
+    await prisma.product.delete({ where: { id: Number(id) } });
     res.json({ message: "Товар успешно удалён" });
   } catch (error) {
     console.error("Ошибка при удалении товара:", error);
@@ -99,9 +153,4 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-module.exports = {
-  getAllProducts,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-};
+module.exports = { getAllProducts, getProductById, createProduct, updateProduct, deleteProduct };
