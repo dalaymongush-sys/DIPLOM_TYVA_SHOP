@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useCart } from "../context/CartContext";
+import { resolveImageUrl } from "../utils/api";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -170,7 +171,7 @@ function CatalogPage() {
             {products.map((product) => (
               <div key={product.id} className="product-card">
                 <img
-                  src={product.imageUrl || "https://via.placeholder.com/300x180?text=Нет+фото"}
+                  src={resolveImageUrl(product.imageUrl) || "https://via.placeholder.com/300x180?text=Нет+фото"}
                   alt={product.name}
                   className="product-image"
                 />

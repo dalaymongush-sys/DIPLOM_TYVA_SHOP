@@ -5,7 +5,7 @@ import ConfirmDialog from "../components/ConfirmDialog";
 const API = import.meta.env.VITE_API_URL;
 
 function AdminPage() {
-  const emptyProductForm = { name: "", description: "", price: "", imageUrl: "", stock: "", categoryId: "" };
+  const emptyProductForm = { name: "", description: "", price: "", stock: "", categoryId: "" };
   const emptyCategoryForm = { name: "" };
 
   const [categories, setCategories] = useState([]);
@@ -21,6 +21,8 @@ function AdminPage() {
 
   const [productForm, setProductForm] = useState(emptyProductForm);
   const [categoryForm, setCategoryForm] = useState(emptyCategoryForm);
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState("");
 
   const [confirm, setConfirm] = useState(null); // { message, onConfirm }
 
@@ -62,12 +64,24 @@ function AdminPage() {
     setProductForm((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleCategoryChange = (e) => {
     const { name, value } = e.target;
     setCategoryForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const resetProductForm = () => { setProductForm(emptyProductForm); setEditingProductId(null); };
+  const resetProductForm = () => {
+    setProductForm(emptyProductForm);
+    setEditingProductId(null);
+    setImageFile(null);
+    setImagePreview("");
+  };
   const resetCategoryForm = () => { setCategoryForm(emptyCategoryForm); setEditingCategoryId(null); };
 
   const handleProductSubmit = async (e) => {
@@ -78,19 +92,18 @@ function AdminPage() {
       return;
     }
 
-    const payload = {
-      name: productForm.name,
-      description: productForm.description,
-      price: Number(productForm.price),
-      imageUrl: productForm.imageUrl,
-      stock: Number(productForm.stock) || 0,
-      categoryId: Number(productForm.categoryId),
-    };
+    const formData = new FormData();
+    formData.append("name", productForm.name);
+    formData.append("description", productForm.description);
+    formData.append("price", productForm.price);
+    formData.append("stock", productForm.stock || 0);
+    formData.append("categoryId", productForm.categoryId);
+    if (imageFile) formData.append("image", imageFile);
 
     const url = editingProductId ? `${API}/api/products/${editingProductId}` : `${API}/api/products`;
     const method = editingProductId ? "PUT" : "POST";
 
-    const res = await authFetch(url, { method, body: JSON.stringify(payload) });
+    const res = await authFetch(url, { method, body: formData });
     if (!res) return;
     const data = await res.json();
 
@@ -124,10 +137,11 @@ function AdminPage() {
       name: product.name || "",
       description: product.description || "",
       price: product.price || "",
-      imageUrl: product.imageUrl || "",
       stock: product.stock || "",
       categoryId: product.categoryId || "",
     });
+    setImageFile(null);
+    setImagePreview(product.imageUrl ? `${API}${product.imageUrl.startsWith("/uploads") ? product.imageUrl : ""}` : "");
     setProductMessage("");
   };
 
@@ -226,13 +240,45 @@ function AdminPage() {
         <form className="order-form" onSubmit={handleProductSubmit}>
           <input type="text" name="name" placeholder="Название товара" value={productForm.name} onChange={handleProductChange} />
           <textarea name="description" placeholder="Описание товара" value={productForm.description} onChange={handleProductChange} className="admin-textarea" />
-          <input type="number" name="price" placeholder="Цена" value={productForm.price} onChange={handleProductChange} />
-          <input type="text" name="imageUrl" placeholder="Ссылка на изображение" value={productForm.imageUrl} onChange={handleProductChange} />
+          <input type="number" name="price" placeholder="Цена (₽)" value={productForm.price} onChange={handleProductChange} />
           <input type="number" name="stock" placeholder="Количество на складе" value={productForm.stock} onChange={handleProductChange} />
           <select name="categoryId" value={productForm.categoryId} onChange={handleProductChange} className="admin-select">
             <option value="">Выберите категорию</option>
             {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
+
+          <div className="form-group">
+            <label className="form-label">Фотография товара</label>
+            <label className="image-upload-label">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handleImageChange}
+                style={{ display: "none" }}
+              />
+              <span className="image-upload-btn">
+                {imageFile ? "📷 Заменить фото" : "📷 Выбрать фото"}
+              </span>
+              <span style={{ fontSize: 12, color: "var(--text-muted)", marginLeft: 8 }}>
+                JPG, PNG, WebP · до 5 МБ
+              </span>
+            </label>
+            {imagePreview && (
+              <div style={{ marginTop: 10 }}>
+                <img
+                  src={imagePreview}
+                  alt="Превью"
+                  style={{ width: 160, height: 110, objectFit: "cover", borderRadius: 8, border: "1px solid var(--border)" }}
+                />
+              </div>
+            )}
+            {!imagePreview && editingProductId && (
+              <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 6 }}>
+                Фото не изменится, если не выбрать новое
+              </p>
+            )}
+          </div>
+
           <div className="admin-form-actions">
             <button type="submit" className="buy-button">
               {editingProductId ? "Сохранить изменения" : "Добавить товар"}
@@ -252,11 +298,17 @@ function AdminPage() {
             <div className="admin-product-list">
               {products.map((product) => (
                 <div key={product.id} className="admin-product-item">
-                  <div>
+                  {product.imageUrl && (
+                    <img
+                      src={product.imageUrl.startsWith("/uploads") ? `${API}${product.imageUrl}` : product.imageUrl}
+                      alt={product.name}
+                      style={{ width: 64, height: 48, objectFit: "cover", borderRadius: 6, flexShrink: 0 }}
+                    />
+                  )}
+                  <div style={{ flex: 1 }}>
                     <strong>{product.name}</strong>
                     <div>Категория: {product.category?.name}</div>
-                    <div>Цена: {product.price} ₽</div>
-                    <div>Остаток: {product.stock}</div>
+                    <div>Цена: {product.price.toLocaleString("ru-RU")} ₽ · Остаток: {product.stock} шт.</div>
                   </div>
                   <div className="admin-product-actions">
                     <button onClick={() => handleEditProduct(product)}>Редактировать</button>

@@ -98,10 +98,14 @@ function RegisterPage() {
             onChange={(e) => setAgreed(e.target.checked)}
             style={{ width: 18, height: 18, cursor: "pointer" }}
           />
-          <label htmlFor="privacy" style={{ fontSize: 13, color: "#666" }}>
-            Я согласен(а) с{" "}
-            <a href="/privacy" target="_blank" style={{ color: "#222" }}>
-              политикой обработки персональных данных
+          <label htmlFor="privacy" style={{ fontSize: 13, color: "var(--text-muted)" }}>
+            Я принимаю{" "}
+            <a href="/terms" target="_blank" style={{ color: "var(--accent-dark)" }}>
+              пользовательское соглашение
+            </a>{" "}
+            и даю согласие на{" "}
+            <a href="/privacy" target="_blank" style={{ color: "var(--accent-dark)" }}>
+              обработку персональных данных
             </a>
           </label>
         </div>

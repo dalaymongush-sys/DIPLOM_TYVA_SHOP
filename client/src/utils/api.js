@@ -1,9 +1,18 @@
+const API = import.meta.env.VITE_API_URL;
+
+export function resolveImageUrl(imageUrl) {
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith("/uploads/")) return `${API}${imageUrl}`;
+  return imageUrl;
+}
+
 export async function authFetch(url, options = {}) {
   const token = localStorage.getItem("token");
+  const isFormData = options.body instanceof FormData;
   const res = await fetch(url, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     },

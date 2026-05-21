@@ -30,6 +30,7 @@ function Header() {
         <nav className="nav">
           <Link to="/">Главная</Link>
           <Link to="/catalog">Каталог</Link>
+          <Link to="/about">О магазине</Link>
           <Link to="/cart">
             Корзина{cartCount > 0 && (
               <span style={{

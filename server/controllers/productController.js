@@ -90,16 +90,13 @@ const createProduct = async (req, res) => {
       return res.status(400).json({ message: parsed.error.errors[0].message });
     }
 
-    const { name, description, price, imageUrl, stock, categoryId } = parsed.data;
+    const { name, description, price, stock, categoryId } = parsed.data;
+    const imageUrl = req.file
+      ? `/uploads/${req.file.filename}`
+      : (req.body.imageUrl ? req.body.imageUrl.trim() : null);
+
     const product = await prisma.product.create({
-      data: {
-        name: name.trim(),
-        description: description.trim(),
-        price,
-        imageUrl: imageUrl ? imageUrl.trim() : null,
-        stock,
-        categoryId,
-      },
+      data: { name: name.trim(), description: description.trim(), price, imageUrl, stock, categoryId },
       include: { category: true },
     });
     res.status(201).json(product);
@@ -122,17 +119,22 @@ const updateProduct = async (req, res) => {
       return res.status(400).json({ message: parsed.error.errors[0].message });
     }
 
-    const { name, description, price, imageUrl, stock, categoryId } = parsed.data;
+    const { name, description, price, stock, categoryId } = parsed.data;
+
+    // If new file uploaded — use it; if imageUrl text sent — use it; otherwise keep existing
+    let imageUrl;
+    if (req.file) {
+      imageUrl = `/uploads/${req.file.filename}`;
+    } else if (req.body.imageUrl !== undefined) {
+      imageUrl = req.body.imageUrl ? req.body.imageUrl.trim() : null;
+    } else {
+      const existing = await prisma.product.findUnique({ where: { id: Number(id) }, select: { imageUrl: true } });
+      imageUrl = existing?.imageUrl ?? null;
+    }
+
     const product = await prisma.product.update({
       where: { id: Number(id) },
-      data: {
-        name: name.trim(),
-        description: description.trim(),
-        price,
-        imageUrl: imageUrl ? imageUrl.trim() : null,
-        stock,
-        categoryId,
-      },
+      data: { name: name.trim(), description: description.trim(), price, imageUrl, stock, categoryId },
       include: { category: true },
     });
     res.json(product);
