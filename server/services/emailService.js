@@ -1,7 +1,7 @@
 ﻿const { Resend } = require('resend');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const FROM = 'onboarding@resend.dev';
+const FROM = 'noreply@tuvashop.ru';
 const NAME = 'Tuva Sport Shop';
 
 const sendVerificationCode = async (email, code) => {
