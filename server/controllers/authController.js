@@ -4,10 +4,10 @@ const bcrypt = require("bcrypt");
 const dns = require("dns").promises;
 const { z } = require("zod");
 const {
-  sendVerificationEmail,
+  sendVerificationCode,
   sendWelcomeEmail,
-  sendPasswordReset,
-  send2FACode,
+  sendResetCode,
+  sendTwoFactorCode,
 } = require("../services/emailService");
 
 const registerSchema = z.object({
@@ -73,7 +73,7 @@ const register = async (req, res) => {
           where: { email },
           data: { verificationCode: code, verificationExpiry: expiry },
         });
-        await sendVerificationEmail(email, existingUser.fullName, code);
+        await sendVerificationCode(email, code);
         return res.status(200).json({ message: "Код отправлен повторно", needsVerification: true, email });
       }
       return res.status(400).json({ message: "Пользователь с таким email уже существует" });
@@ -95,7 +95,7 @@ const register = async (req, res) => {
       },
     });
 
-    await sendVerificationEmail(email, fullName.trim(), code);
+    await sendVerificationCode(email, code);
 
     res.status(201).json({
       message: "Код подтверждения отправлен на email",
@@ -183,7 +183,7 @@ const login = async (req, res) => {
         where: { id: user.id },
         data: { twoFactorCode: code, twoFactorExpiry: expiry },
       });
-      await send2FACode(user.email, user.fullName, code);
+      await sendTwoFactorCode(user.email, code);
       return res.json({ requires2FA: true, email: user.email });
     }
 
@@ -249,7 +249,7 @@ const resendVerification = async (req, res) => {
     const code = generateCode();
     const expiry = new Date(Date.now() + 15 * 60 * 1000);
     await prisma.user.update({ where: { email }, data: { verificationCode: code, verificationExpiry: expiry } });
-    await sendVerificationEmail(email, user.fullName, code);
+    await sendVerificationCode(email, code);
     res.json({ message: "Новый код отправлен на email" });
   } catch (error) {
     console.error("Ошибка resendVerification:", error);
@@ -277,7 +277,7 @@ const forgotPassword = async (req, res) => {
       data: { resetCode: code, resetCodeExpiry: expiry },
     });
 
-    await sendPasswordReset(email, user.fullName, code);
+    await sendResetCode(email, code);
 
     res.json({ message: "Если аккаунт существует — код отправлен на email" });
   } catch (error) {
