@@ -16,6 +16,7 @@ const settingsRoutes = require("./routes/settingsRoutes");
 const promoRoutes = require("./routes/promoRoutes");
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet({
