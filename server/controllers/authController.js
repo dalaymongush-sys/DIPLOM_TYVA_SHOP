@@ -401,7 +401,7 @@ const changePassword = async (req, res) => {
 const updateAvatar = async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: "Файл не загружен" });
-    const avatarUrl = req.file.path;
+    const avatarUrl = `/uploads/${req.file.filename}`;
     await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl } });
     res.json({ avatarUrl });
   } catch (error) {

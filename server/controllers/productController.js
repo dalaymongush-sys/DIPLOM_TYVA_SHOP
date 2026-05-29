@@ -114,7 +114,7 @@ const createProduct = async (req, res) => {
 
     const { name, description, price, stock, categoryId } = parsed.data;
     const imageUrl = req.file
-      ? req.file.path
+      ? `/uploads/${req.file.filename}`
       : req.body.imageUrl
       ? req.body.imageUrl.trim()
       : null;
@@ -147,7 +147,7 @@ const updateProduct = async (req, res) => {
 
     let imageUrl;
     if (req.file) {
-      imageUrl = req.file.path;
+      imageUrl = `/uploads/${req.file.filename}`;
     } else if (req.body.imageUrl !== undefined) {
       imageUrl = req.body.imageUrl ? req.body.imageUrl.trim() : null;
     } else {
@@ -217,7 +217,7 @@ const updateHeroImage = async (req, res) => {
 
     const data = {
       ...existing,
-      imageUrl: req.file ? req.file.path : (req.body.imageUrl || existing.imageUrl || null),
+      imageUrl: req.file ? `/uploads/${req.file.filename}` : (req.body.imageUrl || existing.imageUrl || null),
       naadymTitle: req.body.naadymTitle !== undefined ? req.body.naadymTitle : existing.naadymTitle,
       naadymSubtitle: req.body.naadymSubtitle !== undefined ? req.body.naadymSubtitle : existing.naadymSubtitle,
       naadymText: req.body.naadymText !== undefined ? req.body.naadymText : existing.naadymText,
