@@ -1,24 +1,20 @@
-const multer = require("multer");
-const path = require("path");
-const fs = require("fs");
+const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
 
-const uploadDir = path.join(__dirname, "../uploads");
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadDir),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    const unique = `product_${Date.now()}_${Math.random().toString(36).slice(2)}${ext}`;
-    cb(null, unique);
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: {
+    folder: 'tuvashop',
+    allowed_formats: ['jpg', 'jpeg', 'png', 'webp'],
+    transformation: [{ quality: 'auto', fetch_format: 'auto' }],
   },
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowed = [".jpg", ".jpeg", ".png", ".webp"];
-  const ext = path.extname(file.originalname).toLowerCase();
-  if (allowed.includes(ext)) cb(null, true);
-  else cb(new Error("Только изображения JPG, PNG, WebP"), false);
+  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowed.includes(file.mimetype)) cb(null, true);
+  else cb(new Error('Только изображения JPG, PNG, WebP'), false);
 };
 
 module.exports = multer({

@@ -28,7 +28,7 @@ router.post("/:id/images", authMiddleware, adminMiddleware, upload.single("image
   try {
     const { id } = req.params;
     if (!req.file) return res.status(400).json({ message: "Файл не загружен" });
-    const imageUrl = `/uploads/${req.file.filename}`;
+    const imageUrl = req.file.path;
     const product = await prisma.product.findUnique({ where: { id: Number(id) } });
     if (!product) return res.status(404).json({ message: "Товар не найден" });
     const images = [...(product.images || []), imageUrl];
