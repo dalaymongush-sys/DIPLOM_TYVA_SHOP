@@ -72,8 +72,8 @@ function TwoFactorPage() {
     <div style={{ display: "flex", justifyContent: "center", paddingTop: 40 }}>
       <div
         style={{
-          background: "var(--white)",
-          border: "1px solid var(--border)",
+          background: "var(--bg-2)",
+          border: "1px solid var(--line)",
           borderRadius: "var(--r-xl)",
           padding: "40px 36px",
           maxWidth: 440,
@@ -114,10 +114,10 @@ function TwoFactorPage() {
                 style={{
                   width: 48, height: 58, textAlign: "center",
                   fontSize: 22, fontWeight: 800,
-                  border: "2px solid " + (digit ? "var(--accent)" : "var(--border)"),
+                  border: "2px solid " + (digit ? "var(--gold)" : "var(--line)"),
                   borderRadius: "var(--r-md)", outline: "none",
-                  background: digit ? "#fffbf0" : "var(--bg-soft)",
-                  color: "var(--text)", transition: "all .15s",
+                  background: "var(--bg-2)",
+                  color: "var(--paper)", transition: "all .15s",
                 }}
               />
             ))}
