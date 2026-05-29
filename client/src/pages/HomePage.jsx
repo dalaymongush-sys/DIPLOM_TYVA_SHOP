@@ -336,7 +336,16 @@ function HomePage() {
           <div className="products-grid">
             {featured.map((product) => (
               <div key={product.id} className="product-card">
-                <img src={product.imageUrl} alt={product.name} className="product-image" />
+                <img
+                  src={product.imageUrl
+                    ? product.imageUrl.startsWith('http')
+                      ? product.imageUrl
+                      : `${API}${product.imageUrl}`
+                    : null
+                  }
+                  alt={product.name}
+                  className="product-image"
+                />
                 <div style={{ padding: '4px 0' }}>
                   <Link to={`/product/${product.id}`} className="product-title-link">{product.name}</Link>
                   <p className="product-category-label">{product.category?.name}</p>
