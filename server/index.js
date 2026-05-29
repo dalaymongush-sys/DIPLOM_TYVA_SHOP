@@ -4,7 +4,9 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const path = require("path");
-require("dotenv").config();
+if (process.env.NODE_ENV !== 'production') {
+  require('dotenv').config();
+}
 
 const categoryRoutes = require("./routes/categoryRoutes");
 const productRoutes = require("./routes/productRoutes");
