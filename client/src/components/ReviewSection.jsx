@@ -122,7 +122,7 @@ function ReviewSection({ productId }) {
           gap: 20,
           marginBottom: 28,
           paddingBottom: 20,
-          borderBottom: "1px solid var(--border)",
+          borderBottom: "1px solid var(--line)",
           flexWrap: "wrap",
         }}
       >
@@ -157,8 +157,8 @@ function ReviewSection({ productId }) {
       {currentUser && (
         <div
           style={{
-            background: "var(--bg-soft)",
-            border: "1px solid var(--border)",
+            background: "var(--bg-2)",
+            border: "1px solid var(--line)",
             borderRadius: "var(--r-lg)",
             padding: 24,
             marginBottom: 28,
@@ -196,14 +196,14 @@ function ReviewSection({ productId }) {
               onChange={(e) => setForm((p) => ({ ...p, text: e.target.value }))}
               style={{
                 padding: "12px 14px",
-                border: "1px solid var(--border)",
+                border: "1px solid var(--line)",
                 borderRadius: "var(--r-md)",
                 fontSize: 14,
                 minHeight: 90,
                 resize: "vertical",
                 fontFamily: "inherit",
-                background: "white",
-                color: "var(--text)",
+                background: "var(--bg)",
+                color: "var(--paper)",
               }}
               onFocus={(e) => (e.target.style.borderColor = "var(--accent)")}
               onBlur={(e) => (e.target.style.borderColor = "var(--border)")}
