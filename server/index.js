@@ -27,7 +27,11 @@ const corsOptions = {
     const allowed = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://localhost:4173',
       'http://192.168.1.140:5173',
+      'https://gleaming-success-production.up.railway.app',
+      'https://tuvashop.ru',
+      'https://www.tuvashop.ru',
       process.env.CLIENT_URL,
     ].filter(Boolean);
     if (!origin || allowed.includes(origin)) {
