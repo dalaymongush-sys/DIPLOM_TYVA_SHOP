@@ -7,11 +7,15 @@ const {
   getAllOrders,
   updateOrderStatus,
   cancelOrder,
+  getStats,
+  exportOrdersCSV,
 } = require("../controllers/orderController");
 
 const authMiddleware = require("../middleware/authMiddleware");
 const adminMiddleware = require("../middleware/adminMiddleware");
 
+router.get("/stats", authMiddleware, adminMiddleware, getStats);
+router.get("/export/csv", authMiddleware, adminMiddleware, exportOrdersCSV);
 router.post("/", authMiddleware, createOrder);
 router.get("/my", authMiddleware, getMyOrders);
 router.get("/", authMiddleware, adminMiddleware, getAllOrders);

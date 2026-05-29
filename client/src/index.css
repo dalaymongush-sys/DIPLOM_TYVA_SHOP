@@ -1,20 +1,85 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
 :root {
-  font-family: Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #222;
-  background-color: #f6f6f6;
+  --bg:       #1c1408;
+  --bg-2:     #241a0d;
+  --bg-3:     #2d2113;
+  --gold:     #c8952a;
+  --gold-2:   #e8b84b;
+  --gold-pale:#f5e9c8;
+  --paper:    #faf8f3;
+  --stone:    #9e9183;
+  --stone-dim:#6b6258;
+  --white:    #ffffff;
+  --ok:       #5fae5a;
+  --warn:     #e09a3a;
+  --danger:   #c0533a;
+  --line:     rgba(232,184,75,.18);
+  --line-strong: rgba(232,184,75,.35);
+  --shadow:   0 30px 60px -30px rgba(0,0,0,.6), 0 8px 24px -12px rgba(0,0,0,.4);
+  --r-sm:     2px;
+  --r-md:     4px;
+  --r-lg:     8px;
+  --r-xl:     4px;
+
+  /* Алиасы для совместимости */
+  --ink:       #faf8f3;
+  --earth:     #1c1408;
+  --earth-md:  #241a0d;
+  --earth-lt:  #9e9183;
+  --surface:   #2d2113;
+  --stone-lt:  rgba(232,184,75,.18);
+  --text:      #faf8f3;
+  --text-muted:#9e9183;
+  --primary:   #1c1408;
+  --accent:    #c8952a;
+  --accent-dark:#c8952a;
+  --border:    rgba(232,184,75,.18);
+  --bg-soft:   #241a0d;
+  --red:       #c0533a;
+  --green:     #5fae5a;
 }
 
-html,
-body,
-#root {
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
   margin: 0;
-  min-width: 320px;
+  padding: 0;
   min-height: 100vh;
 }
 
 body {
-  color: #222;
-  background-color: #f6f6f6;
+  font-family: 'Manrope', system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--paper);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  background-image:
+    radial-gradient(rgba(232,184,75,.025) 1px, transparent 1px),
+    radial-gradient(rgba(255,255,255,.012) 1px, transparent 1px);
+  background-size: 3px 3px, 7px 7px;
+  background-position: 0 0, 1px 1px;
+  background-attachment: fixed;
 }
+
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0; }
+input, select, textarea { font-family: inherit; color: inherit; }
+img { display: block; max-width: 100%; }
+
+h1, h2, h3, h4, h5 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 500;
+  letter-spacing: .005em;
+  margin: 0;
+  color: var(--paper);
+}
+
+p { margin: 0 0 .75rem; }
+p:last-child { margin-bottom: 0; }
+
+.mono { font-family: 'JetBrains Mono', monospace; }

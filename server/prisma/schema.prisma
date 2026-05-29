@@ -8,17 +8,37 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  password  String
-  fullName  String
-  role      String   @default("USER")
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now())
+  id                 Int       @id @default(autoincrement())
+  email              String    @unique
+  password           String
+  fullName           String
+  role               String    @default("USER")
+  phone              String?
+  address            String?
+  avatarUrl          String?
+  isVerified         Boolean   @default(false)
+  verificationCode   String?
+  verificationExpiry DateTime?
+  createdAt          DateTime  @default(now())
+
+  // Адрес доставки (структурированный)
+  city               String?
+  street             String?
+  house              String?
+  apartment          String?
+
+  // Восстановление пароля
+  resetCode          String?
+  resetCodeExpiry    DateTime?
+
+  // Двухфакторная аутентификация
+  twoFactorEnabled   Boolean   @default(false)
+  twoFactorCode      String?
+  twoFactorExpiry    DateTime?
 
   orders    Order[]
   reviews   Review[]
+  wishlist  Wishlist[]
 }
 
 model Category {
@@ -35,6 +55,7 @@ model Product {
   description String
   price       Float
   imageUrl    String?
+  images      String[]   @default([])
   stock       Int        @default(0)
   createdAt   DateTime   @default(now())
 
@@ -43,6 +64,17 @@ model Product {
 
   orderItems  OrderItem[]
   reviews     Review[]
+  wishlist    Wishlist[]
+}
+
+model Wishlist {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  productId Int
+  product   Product  @relation(fields: [productId], references: [id])
+  @@unique([userId, productId])
 }
 
 model Review {
@@ -80,4 +112,15 @@ model OrderItem {
 
   order      Order    @relation(fields: [orderId], references: [id])
   product    Product  @relation(fields: [productId], references: [id])
+}
+
+model PromoCode {
+  id          Int       @id @default(autoincrement())
+  code        String    @unique
+  discount    Int
+  isActive    Boolean   @default(true)
+  usageLimit  Int?
+  usageCount  Int       @default(0)
+  expiresAt   DateTime?
+  createdAt   DateTime  @default(now())
 }

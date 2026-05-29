@@ -2,7 +2,8 @@ const API = import.meta.env.VITE_API_URL;
 
 export function resolveImageUrl(imageUrl) {
   if (!imageUrl) return null;
-  if (imageUrl.startsWith("/uploads/")) return `${API}${imageUrl}`;
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) return imageUrl;
+  if (imageUrl.startsWith('/')) return `${API}${imageUrl}`;
   return imageUrl;
 }
 
