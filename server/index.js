@@ -18,10 +18,25 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+const corsOptions = {
+  origin: function(origin, callback) {
+    const allowed = [
+      'http://localhost:5173',
+      'http://localhost:4173',
+      'https://gleaming-success-production.up.railway.app',
+      'https://tuvashop.ru',
+      'https://www.tuvashop.ru',
+      process.env.CLIENT_URL,
+    ].filter(Boolean);
+    if (!origin || allowed.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
-}));
+};
+app.use(cors(corsOptions));
 app.use(morgan("dev"));
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
